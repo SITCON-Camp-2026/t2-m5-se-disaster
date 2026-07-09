@@ -959,7 +959,7 @@ a:focus-visible {
   grid-row: span 3;
   display: grid;
   width: min(100%, 520px);
-  aspect-ratio: 17 / 11;
+  aspect-ratio: 21 / 13;
   gap: 0;
   overflow: hidden;
   border: 1px solid #25364a;
@@ -1001,20 +1001,45 @@ a:focus-visible {
   pointer-events: none;
 }
 
-.v1-maze__player {
+.v1-maze__player,
+.v1-maze__error {
   position: absolute;
   aspect-ratio: 1;
   border-radius: 999px;
+  transform: translate(-50%, -50%);
+  transition:
+    left 150ms linear,
+    top 150ms linear;
+}
+
+.v1-maze__player {
   background:
     radial-gradient(circle at 64% 34%, #17202a 0 7%, transparent 8%),
     conic-gradient(from 30deg, transparent 0 52deg, #e5c15b 53deg 360deg);
   box-shadow:
     inset -5px -6px 0 rgb(138 90 0 / 24%),
     0 3px 8px rgb(23 32 42 / 24%);
-  transform: translate(-50%, -50%);
-  transition:
-    left 150ms linear,
-    top 150ms linear;
+  z-index: 2;
+}
+
+.v1-maze__error {
+  border-radius: 35% 35% 45% 45%;
+  background:
+    radial-gradient(circle at 36% 36%, #ffffff 0 8%, transparent 9%),
+    radial-gradient(circle at 64% 36%, #ffffff 0 8%, transparent 9%),
+    linear-gradient(135deg, #d8433b, #8f1d18);
+  box-shadow:
+    0 0 0 3px rgb(184 50 43 / 18%),
+    0 4px 10px rgb(27 37 51 / 24%);
+  z-index: 1;
+}
+
+.v1-maze__error:nth-child(2) {
+  background:
+    radial-gradient(circle at 36% 36%, #ffffff 0 8%, transparent 9%),
+    radial-gradient(circle at 64% 36%, #ffffff 0 8%, transparent 9%),
+    linear-gradient(135deg, #e05f3d, #9b2c14);
+  transform: translate(-50%, -50%) rotate(8deg);
 }
 
 .v1-maze__pellet {

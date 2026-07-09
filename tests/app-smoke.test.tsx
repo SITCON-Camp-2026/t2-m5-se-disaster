@@ -115,6 +115,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByText("小精靈整理迷宮")).toBeInTheDocument();
+    expect(screen.getByText(/兩個錯誤會自己追過來/)).toBeInTheDocument();
     expect(screen.getByText(/^冷靜值 0\/\d+ · 干擾 0$/)).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "d" });

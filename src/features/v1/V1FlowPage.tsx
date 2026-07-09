@@ -170,47 +170,69 @@ const riskSignals: Array<{
 
 const mazeTemplates = [
   [
-    "#################",
-    "#.......#.......#",
-    "#.###.#.#.#.###.#",
-    "#...#.#...#...#.#",
-    "#.#.#.###.#.#.#.#",
-    "#.#...#.!...#...#",
-    "#.###.#.###.#.###",
-    "#.....#...#.....#",
-    "#.###.#.#.#.###.#",
-    "#.......!...#...#",
-    "#################",
+    "#####################",
+    "#.......#...........#",
+    "#.###.#.#.#####.###.#",
+    "#...#.#...#...#...#.#",
+    "###.#.#####.#.###.#.#",
+    "#...#...!...#.....#.#",
+    "#.#.#####.###.#####.#",
+    "#.#.....#...#.......#",
+    "#.#####.###.#.###.###",
+    "#.....#.....#...#...#",
+    "#.###.#.#######.#.#.#",
+    "#...#.....!...#.....#",
+    "#####################",
   ],
   [
-    "#################",
-    "#.....#.........#",
-    "#.###.#.#####.#.#",
-    "#...#...#...#.#.#",
-    "###.#####.#.#.#.#",
-    "#...#...!.#...#.#",
-    "#.#.#.#####.###.#",
-    "#.#...#.....#...#",
-    "#.#####.###.#.#.#",
-    "#.......#.!...#.#",
-    "#################",
+    "#####################",
+    "#.....#.............#",
+    "#.###.#.#######.###.#",
+    "#...#...#.....#.#...#",
+    "#.#.#####.###.#.#.###",
+    "#.#.....!.#...#.#...#",
+    "#.#####.###.###.###.#",
+    "#.....#.....#.......#",
+    "#####.#.#####.#####.#",
+    "#.....#...#...#...#.#",
+    "#.#######.#.###.#.#.#",
+    "#.........!...#.....#",
+    "#####################",
   ],
   [
-    "#################",
-    "#.........#.....#",
-    "#.#######.#.###.#",
-    "#.#.....#...#...#",
-    "#.#.###.#####.#.#",
-    "#...#...!...#.#.#",
-    "###.#.#####.#.#.#",
-    "#...#.....#.#...#",
-    "#.#######.#.###.#",
-    "#.....!...#.....#",
-    "#################",
+    "#####################",
+    "#.........#.........#",
+    "#.#######.#.#####.#.#",
+    "#.#.....#...#...#.#.#",
+    "#.#.###.#####.#.#.#.#",
+    "#...#...!...#.#...#.#",
+    "###.#.#####.#.#####.#",
+    "#...#.....#.#.......#",
+    "#.#######.#.###.###.#",
+    "#.....!...#...#...#.#",
+    "#.###.#######.###.#.#",
+    "#...#.............#.#",
+    "#####################",
   ],
 ];
 
 const mazeStart = { row: 1, col: 1 };
+const mazeErrorStarts = [
+  { row: 1, col: 19 },
+  { row: 11, col: 19 },
+];
+const mazeDirections = [
+  { row: -1, col: 0 },
+  { row: 0, col: 1 },
+  { row: 1, col: 0 },
+  { row: 0, col: -1 },
+];
+
+type MazePosition = typeof mazeStart;
+
+function createMazeErrors() {
+  return mazeErrorStarts.map((position) => ({ ...position }));
+}
 
 function mazeKey(row: number, col: number) {
   return `${row}-${col}`;
@@ -241,6 +263,60 @@ function createMazeHazards(rows: string[]) {
     });
   });
   return hazards;
+}
+
+function sameMazePosition(a: MazePosition, b: MazePosition) {
+  return a.row === b.row && a.col === b.col;
+}
+
+function canMoveToMazePosition(rows: string[], position: MazePosition) {
+  return rows[position.row]?.[position.col] !== "#";
+}
+
+function findNextErrorStep(
+  rows: string[],
+  current: MazePosition,
+  target: MazePosition,
+) {
+  if (sameMazePosition(current, target)) return current;
+
+  const visited = new Set([mazeKey(current.row, current.col)]);
+  const queue: Array<{ position: MazePosition; firstStep: MazePosition }> = [];
+
+  mazeDirections.forEach((direction) => {
+    const next = {
+      row: current.row + direction.row,
+      col: current.col + direction.col,
+    };
+
+    if (!canMoveToMazePosition(rows, next)) return;
+
+    visited.add(mazeKey(next.row, next.col));
+    queue.push({ position: next, firstStep: next });
+  });
+
+  while (queue.length > 0) {
+    const item = queue.shift()!;
+
+    if (sameMazePosition(item.position, target)) {
+      return item.firstStep;
+    }
+
+    mazeDirections.forEach((direction) => {
+      const next = {
+        row: item.position.row + direction.row,
+        col: item.position.col + direction.col,
+      };
+      const key = mazeKey(next.row, next.col);
+
+      if (visited.has(key) || !canMoveToMazePosition(rows, next)) return;
+
+      visited.add(key);
+      queue.push({ position: next, firstStep: item.firstStep });
+    });
+  }
+
+  return current;
 }
 
 function pickRandomMazeRows(currentRows?: string[]) {
@@ -302,6 +378,7 @@ export function V1FlowPage() {
     useState<PracticeChoice>("missing");
   const [mazeRows, setMazeRows] = useState(initialMazeRows);
   const [mazePlayer, setMazePlayer] = useState(mazeStart);
+  const [mazeErrors, setMazeErrors] = useState(createMazeErrors);
   const [mazePellets, setMazePellets] = useState(() =>
     createMazePellets(initialMazeRows),
   );
@@ -319,11 +396,13 @@ export function V1FlowPage() {
   const mazeCleared = mazePellets.size === 0;
   const mazeColumnCount = mazeRows[0].length;
   const mazeRowCount = mazeRows.length;
-  const mazePlayerStyle = {
-    left: `${((mazePlayer.col + 0.5) / mazeColumnCount) * 100}%`,
-    top: `${((mazePlayer.row + 0.5) / mazeRowCount) * 100}%`,
-    width: `${82 / mazeColumnCount}%`,
-  } satisfies CSSProperties;
+  function createMazeEntityStyle(position: MazePosition, widthScale: number) {
+    return {
+      left: `${((position.col + 0.5) / mazeColumnCount) * 100}%`,
+      top: `${((position.row + 0.5) / mazeRowCount) * 100}%`,
+      width: `${widthScale / mazeColumnCount}%`,
+    } satisfies CSSProperties;
+  }
 
   function selectBuiltInRecord(recordId: string) {
     setSelectedRecordId(recordId);
@@ -336,15 +415,25 @@ export function V1FlowPage() {
         col: current.col + colDelta,
       };
 
-      if (mazeRows[next.row]?.[next.col] === "#") {
+      if (!canMoveToMazePosition(mazeRows, next)) {
         return current;
       }
 
-      if (mazeHazards.has(mazeKey(next.row, next.col))) {
+      const steppedOnHazard = mazeHazards.has(mazeKey(next.row, next.col));
+      const nextErrors = steppedOnHazard
+        ? createMazeErrors()
+        : mazeErrors.map((error) => findNextErrorStep(mazeRows, error, next));
+      const wasCaught =
+        mazeErrors.some((error) => sameMazePosition(error, next)) ||
+        nextErrors.some((error) => sameMazePosition(error, next));
+
+      if (steppedOnHazard || wasCaught) {
         setMazeHits((currentHits) => currentHits + 1);
+        setMazeErrors(createMazeErrors());
         return mazeStart;
       }
 
+      setMazeErrors(nextErrors);
       setMazePellets((currentPellets) => {
         const nextPellets = new Set(currentPellets);
         nextPellets.delete(mazeKey(next.row, next.col));
@@ -359,6 +448,7 @@ export function V1FlowPage() {
     const nextRows = pickRandomMazeRows(mazeRows);
     setMazeRows(nextRows);
     setMazePlayer(mazeStart);
+    setMazeErrors(createMazeErrors());
     setMazePellets(createMazePellets(nextRows));
     setMazeHits(0);
   }
@@ -396,6 +486,31 @@ export function V1FlowPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   });
+
+  useEffect(() => {
+    if (mazeCleared) return;
+
+    const timer = window.setInterval(() => {
+      setMazeErrors((currentErrors) => {
+        const nextErrors = currentErrors.map((error) =>
+          findNextErrorStep(mazeRows, error, mazePlayer),
+        );
+        const wasCaught = nextErrors.some((error) =>
+          sameMazePosition(error, mazePlayer),
+        );
+
+        if (wasCaught) {
+          setMazeHits((currentHits) => currentHits + 1);
+          setMazePlayer(mazeStart);
+          return createMazeErrors();
+        }
+
+        return nextErrors;
+      });
+    }, 700);
+
+    return () => window.clearInterval(timer);
+  }, [mazeCleared, mazePlayer, mazeRows]);
 
   return (
     <main className="layout v1-layout">
@@ -579,7 +694,7 @@ export function V1FlowPage() {
           <h2>小精靈整理迷宮</h2>
           <p>
             用 WASD
-            或方向鍵吃掉雜訊豆；踩到干擾格會回到起點。這只是頁面底部的小彩蛋。
+            或方向鍵吃掉雜訊豆；兩個錯誤會自己追過來，被追上就回到起點。這只是頁面底部的小彩蛋。
           </p>
         </div>
         <div
@@ -612,7 +727,17 @@ export function V1FlowPage() {
             }),
           )}
           <div className="v1-maze__runner" aria-hidden="true">
-            <span className="v1-maze__player" style={mazePlayerStyle} />
+            {mazeErrors.map((error, index) => (
+              <span
+                className="v1-maze__error"
+                key={mazeKey(error.row, error.col) + index}
+                style={createMazeEntityStyle(error, 78)}
+              />
+            ))}
+            <span
+              className="v1-maze__player"
+              style={createMazeEntityStyle(mazePlayer, 92)}
+            />
           </div>
         </div>
         <div className="v1-maze__controls" aria-label="小精靈方向鍵">
@@ -641,7 +766,7 @@ export function V1FlowPage() {
           <p>
             {mazeCleared
               ? "迷宮清空完成。可以回去面對下一筆資訊了。"
-              : "避開紅色干擾格，吃掉雜訊豆，就少一點資訊噪音。"}
+              : "避開紅色干擾格和兩個會移動的錯誤，吃掉雜訊豆，就少一點資訊噪音。"}
           </p>
           <button type="button" onClick={resetMazeGame}>
             重新整理
