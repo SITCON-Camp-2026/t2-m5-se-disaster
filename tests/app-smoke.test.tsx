@@ -10,6 +10,9 @@ describe("App", () => {
   it("renders starter title", () => {
     render(<App />);
     expect(screen.getByText("災害資訊整理工作台")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "查看 v1 流程設計網頁" }),
+    ).toHaveAttribute("href", "./#/v1/");
   });
 
   it("keeps the home page focused on phase 0 tabs", () => {
@@ -75,6 +78,18 @@ describe("App", () => {
     expect(screen.getByRole("link", { name: "回到 Phase 0" })).toHaveAttribute(
       "href",
       "../",
+    );
+  });
+
+  it("renders the v1 flow page from a GitHub Pages safe hash route", () => {
+    window.history.pushState({}, "", "/#/v1/");
+
+    render(<App />);
+
+    expect(screen.getByText("資訊整理者流程工作台")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "回到 Phase 0" })).toHaveAttribute(
+      "href",
+      "./",
     );
   });
 

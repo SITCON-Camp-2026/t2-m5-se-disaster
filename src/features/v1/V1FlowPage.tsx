@@ -371,6 +371,7 @@ function ListCard({
 }
 
 export function V1FlowPage() {
+  const homeHref = /^#\/v1\/?$/.test(window.location.hash) ? "./" : "../";
   const [selectedRecordId, setSelectedRecordId] = useState(
     practiceRecords[0]?.id ?? "",
   );
@@ -515,7 +516,7 @@ export function V1FlowPage() {
   return (
     <main className="layout v1-layout">
       <header className="hero v1-hero">
-        <a className="text-link" href="../">
+        <a className="text-link" href={homeHref}>
           回到 Phase 0
         </a>
         <p className="eyebrow">v1 流程設計</p>
